@@ -107,7 +107,7 @@ Params size (MB): 1.84
 Estimated Total Size (MB): 7617.32
 ----------------------------------------------------------------
 ```
-## <code>model.train()</code>, DropBlock ❌
+## <code>model.eval()</code>, DropBlock ❌
 ```
 ----------------------------------------------------------------
         Layer (type)               Output Shape         Param #
