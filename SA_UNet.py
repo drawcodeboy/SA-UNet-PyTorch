@@ -16,6 +16,8 @@ class DropBlock(nn.Module):
         논문에서는 Keep Probability에 대해 학습을 하면서 1부터 알맞는 값까지
         선형적으로 학습하여 적합한 p값을 찾아야 한다 하지만, 그 부분은 구현이 꽤
         어려워서 0.9를 default로 모델링을 한다.
+        이 부분은 DropBlock에서만 선형적으로 fit하게 맞추려고 하지만
+        정작 SA-UNet 논문에서도 그러한 과정은 보이지 않는다.
         '''
         self.block_size = block_size
         self.keep_prob = keep_prob
