@@ -14,7 +14,7 @@ model = SA_UNet(channel=1, block_size=22, keep_prob=0.9)
 # Configuration
 ![image](https://github.com/drawcodeboy/SA-UNet-Implementation/assets/84033023/d0801cef-b352-435c-a6e5-fe2717c78f9f)
 * * *
-# DropBlock Activation/Deactivation
+# torchsummary
 * When calling <code>model.train()</code>, <code>model.val()</code>, <b>DropBlock is enabled/deactivated</b>, make the same configuration as Dropout and Batch Normalization.
 * <code>model.train()</code>, <code>model.eval()</code> 호출 시 <b>DropBlock이 활성화/비활성화</b> 되도록 Dropout, Batch Normalization과 같은 구성을 합니다.
 ## <code>model.train()</code>, DropBlock ⭕
