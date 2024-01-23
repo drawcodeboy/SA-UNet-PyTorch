@@ -1,12 +1,13 @@
 # SA-UNet Implementation in PyTorch
 <img src="https://img.shields.io/badge/PyTorch 2.0.1-EE4C2C?style=for-the-badge&logo=PyTorch&logoColor=white">
 
-* SA-UNet Impleneted By PyTorch
-* DropBlock is also implemented so that <code>block_size</code> and <code>keep_prob</code> that are important in the paper can be set to hyperparameters.
-* PyTorch를 통해 SA-UNet을 구현하였습니다.
-* DropBlock 또한 구현하여, 논문에서 중요하게 여기는 <code>block_size</code>, <code>keep_prob</code>을 hyperparameter로 설정할 수 있도록 합니다.
+* <b>SA-UNet</b> Impleneted By PyTorch
+* <b>DropBlock</b> is also implemented so that <code>block_size</code> and <code>keep_prob</code> that are important in the paper can be set to hyperparameters.
+* PyTorch를 통해 <b>SA-UNet</b>을 구현하였습니다.
+* <b>DropBlock</b> 또한 구현하여, 논문에서 중요하게 여기는 <code>block_size</code>, <code>keep_prob</code>을 hyperparameter로 설정할 수 있도록 합니다.
 ```
 from SA_UNet import SA_UNet
+
 model = SA_UNet(channel=1, block_size=22, keep_prob=0.9)
 ```
 * * *
