@@ -7,6 +7,9 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
+'''
+아래 class는 사용하지 않고, 아래의 함수 dropBlock을 사용한다.
+'''
 class DropBlock(nn.Module):
     def __init__(self, block_size, keep_prob=0.9, sync_channel=False):
         super(DropBlock, self).__init__()
