@@ -5,6 +5,7 @@ contact : dobylive01@gmail.com
 
 import torch
 from torch import nn
+import torch.nn.functional as F
 
 class DropBlock(nn.Module):
     def __init__(self, block_size, keep_prob=0.9, sync_channel=False):
@@ -15,8 +16,6 @@ class DropBlock(nn.Module):
         논문에서는 Keep Probability에 대해 학습을 하면서 1부터 알맞는 값까지
         선형적으로 학습하여 적합한 p값을 찾아야 한다 하지만, 그 부분은 구현이 꽤
         어려워서 0.9를 default로 모델링을 한다.
-        이 부분은 DropBlock에서만 선형적으로 fit하게 맞추려고 하지만
-        정작 SA-UNet 논문에서도 그러한 과정은 보이지 않는다.
         '''
         self.block_size = block_size
         self.keep_prob = keep_prob
@@ -38,7 +37,7 @@ class DropBlock(nn.Module):
         여기서 (1-keep_prob)기반 Gamma를 토대로 Bernoulli를 쓰는 것이기 때문에
         1이 Drop할 Center Pixel이다.
         '''
-        mask = torch.distributions.Bernoulli(probs=self.getGamma(feat_size)).sample((feat_size, feat_size))
+        mask = torch.distributions.Bernoulli(probs=self.getGamma(feat_size)).sample((feat_size, feat_size)).to('cuda' if torch.cuda.is_available() else 'cpu')
         return mask
 
     def outOfRegion(self, mask_pixel):
@@ -90,6 +89,18 @@ class DropBlock(nn.Module):
             x = x * mask
             return x
 
+def dropBlock(input, block_size, keep_prob=0.9):
+    N, C, H, W = input.size()
+    block_size = min(block_size, W, H)
+    gamma = (1.0-keep_prob)*H*W / ((block_size**2) * ((H - block_size + 1) * (W - block_size + 1)))
+    noise = torch.empty((N, C, H - block_size + 1, W - block_size + 1), dtype=input.dtype, device=input.device)
+    noise.bernoulli_(gamma)
+
+    noise = F.pad(noise, [block_size // 2] * 4, value=0)
+    noise = F.max_pool2d(noise, stride=(1, 1), kernel_size=(block_size, block_size), padding=block_size // 2)
+    noise = 1 - noise
+    return input * noise
+
 class SpatialAttentionModule(nn.Module):
     def __init__(self):
         super(SpatialAttentionModule, self).__init__()
@@ -97,9 +108,9 @@ class SpatialAttentionModule(nn.Module):
         self.sigmoid = nn.Sigmoid()
         
     def forward(self, x):
-        maxPool = torch.max(x, dim=-3)[0]
-        avgPool = torch.mean(x, dim=-3)
-        concat = torch.stack([maxPool, avgPool])
+        maxPool = torch.max(x, dim=-3)[0].unsqueeze(dim=-3)
+        avgPool = torch.mean(x, dim=-3).unsqueeze(dim=-3)
+        concat = torch.cat([maxPool, avgPool], dim=-3)
         SA = self.conv(concat)
         x = x * SA
         return x
@@ -123,13 +134,17 @@ class ConvBlock(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         if self.training == True:
-            x = self.drop1(x)
+            x = dropBlock(x, 
+                          block_size=(x.shape[-1]//5 if x.shape[-1]//5%2==1 else x.shape[-1]//5+1), 
+                          keep_prob=0.9)
         x = self.bn1(x)
         x = self.relu(x)
 
         x = self.conv2(x)
         if self.training == True:
-            x = self.drop2(x)
+            x = dropBlock(x, 
+                          block_size=(x.shape[-1]//5 if x.shape[-1]//5%2==1 else x.shape[-1]//5+1), 
+                          keep_prob=0.9)
         x = self.bn2(x)
         x = self.relu(x)
         
@@ -171,14 +186,14 @@ class SA_UNet(nn.Module):
         self.e3 = EncoderBlock(32, 64, block_size=block_size, keep_prob=keep_prob)
 
         self.conv1 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.drop1 = DropBlock(block_size=block_size, keep_prob=keep_prob)
+        # self.drop1 = DropBlock(block_size=block_size, keep_prob=keep_prob)
         self.bn1 = nn.BatchNorm2d(128)
 
         # Bridge
         self.sam = SpatialAttentionModule()
 
         self.conv2 = nn.Conv2d(128, 128, kernel_size=3, padding=1)
-        self.drop2 = DropBlock(block_size=block_size, keep_prob=keep_prob)
+        # self.drop2 = DropBlock(block_size=block_size, keep_prob=keep_prob)
         self.bn2 = nn.BatchNorm2d(128)
 
         # Expanding Path
@@ -198,7 +213,9 @@ class SA_UNet(nn.Module):
 
         b = self.conv1(b)
         if self.training == True:
-            b = self.drop1(b)
+            b = dropBlock(b, 
+                          block_size=(b.shape[-1]//5 if b.shape[-1]//5%2==1 else b.shape[-1]//5+1), 
+                          keep_prob=0.9)
         b = self.bn1(b)
         b = self.relu(b)
 
@@ -206,7 +223,9 @@ class SA_UNet(nn.Module):
 
         b = self.conv2(b)
         if self.training == True:
-            b = self.drop2(b)
+            b = dropBlock(b, 
+                          block_size=(b.shape[-1]//5 if b.shape[-1]//5%2==1 else b.shape[-1]//5+1), 
+                          keep_prob=0.9)
         b = self.bn2(b)
         b = self.relu(b)
 
