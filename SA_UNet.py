@@ -120,6 +120,7 @@ class ConvBlock(nn.Module):
         super().__init__()
 
         # Block Size는 이미지 사이즈의 10%인 22로 설정
+        self.keep_prob = keep_prob
         self.conv1 = nn.Conv2d(in_filters, out_filters, kernel_size=3, padding=1)
         self.drop1 = DropBlock(block_size=block_size, keep_prob=keep_prob)
         self.bn1 = nn.BatchNorm2d(out_filters)
@@ -136,7 +137,7 @@ class ConvBlock(nn.Module):
         if self.training == True:
             x = dropBlock(x, 
                           block_size=(x.shape[-1]//5 if x.shape[-1]//5%2==1 else x.shape[-1]//5+1), 
-                          keep_prob=0.9)
+                          keep_prob=self.keep_prob)
         x = self.bn1(x)
         x = self.relu(x)
 
@@ -144,7 +145,7 @@ class ConvBlock(nn.Module):
         if self.training == True:
             x = dropBlock(x, 
                           block_size=(x.shape[-1]//5 if x.shape[-1]//5%2==1 else x.shape[-1]//5+1), 
-                          keep_prob=0.9)
+                          keep_prob=self.keep_prob)
         x = self.bn2(x)
         x = self.relu(x)
         
@@ -181,6 +182,7 @@ class SA_UNet(nn.Module):
         super(SA_UNet, self).__init__()
 
         # Constracting Path block_size = block_size, keep_prob = keep_prob
+        self.keep_prob = keep_prob
         self.e1 = EncoderBlock(channel, 16, block_size=block_size, keep_prob=keep_prob)
         self.e2 = EncoderBlock(16, 32, block_size=block_size, keep_prob=keep_prob)
         self.e3 = EncoderBlock(32, 64, block_size=block_size, keep_prob=keep_prob)
@@ -215,7 +217,7 @@ class SA_UNet(nn.Module):
         if self.training == True:
             b = dropBlock(b, 
                           block_size=(b.shape[-1]//5 if b.shape[-1]//5%2==1 else b.shape[-1]//5+1), 
-                          keep_prob=0.9)
+                          keep_prob=self.keep_prob)
         b = self.bn1(b)
         b = self.relu(b)
 
@@ -225,7 +227,7 @@ class SA_UNet(nn.Module):
         if self.training == True:
             b = dropBlock(b, 
                           block_size=(b.shape[-1]//5 if b.shape[-1]//5%2==1 else b.shape[-1]//5+1), 
-                          keep_prob=0.9)
+                          keep_prob=self.keep_prob)
         b = self.bn2(b)
         b = self.relu(b)
 
